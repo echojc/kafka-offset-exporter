@@ -17,13 +17,14 @@ import (
 func main() {
 	brokerString := flag.String("brokers", "", "Kafka brokers to connect to, comma-separated")
 	topics := flag.String("topics", "", "Only fetch offsets for topics matching this regex (default all)")
+	groups := flag.String("groups", "", "Also fetch offsets for consumer groups matching this regex (default none)")
 
 	port := flag.Int("port", 9000, "Port to export metrics on")
 	path := flag.String("path", "/", "Path to export metrics on")
 
 	refreshInterval := flag.Duration("refresh", 1*time.Minute, "Time between refreshing cluster metadata")
-	fetchOffsetMinInterval := flag.Duration("fetchMin", 15*time.Second, "Min time before updating topic offsets")
-	fetchOffsetMaxInterval := flag.Duration("fetchMax", 40*time.Second, "Max time before updating topic offsets")
+	fetchOffsetMinInterval := flag.Duration("fetchMin", 15*time.Second, "Min time before requesting updates from broker")
+	fetchOffsetMaxInterval := flag.Duration("fetchMax", 40*time.Second, "Max time before requesting updates from broker")
 
 	level := flag.String("level", "info", "Logger level")
 
@@ -41,6 +42,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if *groups == "" {
+		// this regex matches nothing
+		*groups = ".^"
+	}
+	groupsFilter, err := regexp.Compile(*groups)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	kafka := mustNewKafka(*brokerString)
 	defer kafka.Close()
 
@@ -50,6 +60,7 @@ func main() {
 			FetchOffsetMinInterval:  *fetchOffsetMinInterval,
 			FetchOffsetMaxInterval:  *fetchOffsetMaxInterval,
 			TopicsFilter:            topicsFilter,
+			GroupsFilter:            groupsFilter,
 		})
 		startMetricsServer(wg, shutdown, serverConfig{
 			port: *port,
@@ -85,7 +96,9 @@ func mustNewKafka(brokerString string) sarama.Client {
 	}
 	log.WithField("brokers.bootstrap", brokers).Info("connecting to cluster with bootstrap hosts")
 
-	client, err := sarama.NewClient(brokers, nil)
+	cfg := sarama.NewConfig()
+	cfg.Version = sarama.V0_10_0_0
+	client, err := sarama.NewClient(brokers, cfg)
 	if err != nil {
 		log.Fatal(err)
 	}

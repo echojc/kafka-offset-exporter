@@ -35,6 +35,17 @@ var (
 			"leader",
 		},
 	)
+	metricOffsetConsumer = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "kafka_offset_consumer",
+			Help: "Current offset for a consumer group",
+		},
+		[]string{
+			"topic",
+			"partition",
+			"group",
+		},
+	)
 )
 
 type serverConfig struct {
@@ -45,6 +56,7 @@ type serverConfig struct {
 func init() {
 	prometheus.MustRegister(metricOffsetOldest)
 	prometheus.MustRegister(metricOffsetNewest)
+	prometheus.MustRegister(metricOffsetConsumer)
 }
 
 func startMetricsServer(wg *sync.WaitGroup, shutdown chan struct{}, cfg serverConfig) {
