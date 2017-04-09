@@ -13,6 +13,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 type scrapeConfig struct {
 	FetchOffsetMinInterval  time.Duration
 	FetchOffsetMaxInterval  time.Duration
@@ -21,8 +25,28 @@ type scrapeConfig struct {
 	GroupsFilter            *regexp.Regexp
 }
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
+func mustNewScrapeConfig(refresh time.Duration, fetchMin time.Duration, fetchMax time.Duration, topics string, groups string) scrapeConfig {
+	topicsFilter, err := regexp.Compile(topics)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// empty group should match nothing instead of everything
+	if groups == "" {
+		groups = ".^"
+	}
+	groupsFilter, err := regexp.Compile(groups)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return scrapeConfig{
+		FetchOffsetMinInterval:  fetchMin,
+		FetchOffsetMaxInterval:  fetchMax,
+		MetadataRefreshInterval: refresh,
+		TopicsFilter:            topicsFilter,
+		GroupsFilter:            groupsFilter,
+	}
 }
 
 func startKafkaScraper(wg *sync.WaitGroup, shutdown chan struct{}, kafka sarama.Client, cfg scrapeConfig) {

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/http"
 	"sync"
 	"time"
@@ -48,15 +49,25 @@ var (
 	)
 )
 
+func init() {
+	prometheus.MustRegister(metricOffsetOldest)
+	prometheus.MustRegister(metricOffsetNewest)
+	prometheus.MustRegister(metricOffsetConsumer)
+}
+
 type serverConfig struct {
 	port int
 	path string
 }
 
-func init() {
-	prometheus.MustRegister(metricOffsetOldest)
-	prometheus.MustRegister(metricOffsetNewest)
-	prometheus.MustRegister(metricOffsetConsumer)
+func mustNewServerConfig(port int, path string) serverConfig {
+	if port < 0 || port > math.MaxUint16 {
+		log.Fatal("Invalid port number")
+	}
+	return serverConfig{
+		port: port,
+		path: path,
+	}
 }
 
 func startMetricsServer(wg *sync.WaitGroup, shutdown chan struct{}, cfg serverConfig) {
