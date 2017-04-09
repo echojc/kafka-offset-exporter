@@ -110,9 +110,7 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, me *sarama.Broker,
 			}
 
 			if len(groups) == 0 {
-				log.WithField("broker", me.Addr()).
-					Debug("No consumer groups to fetch offsets for")
-				break
+				log.WithField("broker", me.Addr()).Debug("No consumer groups to fetch offsets for")
 			}
 
 			// build requests
@@ -172,9 +170,7 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, me *sarama.Broker,
 			}
 
 			if partitionCount == 0 {
-				log.WithField("broker", me.Addr()).
-					Debug("No partitions for broker to fetch")
-				break
+				log.WithField("broker", me.Addr()).Debug("No partitions for broker to fetch")
 			}
 
 			log.WithField("broker", me.Addr()).
