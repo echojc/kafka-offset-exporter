@@ -18,8 +18,8 @@ func init() {
 }
 
 type scrapeConfig struct {
-	FetchOffsetMinInterval  time.Duration
-	FetchOffsetMaxInterval  time.Duration
+	FetchMinInterval        time.Duration
+	FetchMaxInterval        time.Duration
 	MetadataRefreshInterval time.Duration
 	TopicsFilter            *regexp.Regexp
 	GroupsFilter            *regexp.Regexp
@@ -41,8 +41,8 @@ func mustNewScrapeConfig(refresh time.Duration, fetchMin time.Duration, fetchMax
 	}
 
 	return scrapeConfig{
-		FetchOffsetMinInterval:  fetchMin,
-		FetchOffsetMaxInterval:  fetchMax,
+		FetchMinInterval:        fetchMin,
+		FetchMaxInterval:        fetchMax,
 		MetadataRefreshInterval: refresh,
 		TopicsFilter:            topicsFilter,
 		GroupsFilter:            groupsFilter,
@@ -84,8 +84,8 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, me *sarama.Broker,
 	defer wg.Done()
 
 	log.WithField("broker", me.Addr()).
-		WithField("interval.min", cfg.FetchOffsetMinInterval.String()).
-		WithField("interval.max", cfg.FetchOffsetMaxInterval.String()).
+		WithField("interval.min", cfg.FetchMinInterval.String()).
+		WithField("interval.max", cfg.FetchMaxInterval.String()).
 		Info("Starting handler for broker")
 
 	wait := time.After(0)
@@ -225,8 +225,8 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, me *sarama.Broker,
 			return
 		}
 
-		min := int64(cfg.FetchOffsetMinInterval)
-		max := int64(cfg.FetchOffsetMaxInterval)
+		min := int64(cfg.FetchMinInterval)
+		max := int64(cfg.FetchMaxInterval)
 		duration := time.Duration(rand.Int63n(max-min) + min)
 
 		wait = time.After(duration)
