@@ -213,10 +213,10 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, broker *sarama.Bro
 				handleTopicOffsetRequest(broker, &newestRequest, "newest", metricOffsetNewest)
 			}()
 			for i := range groupRequests {
-				go func() {
+				go func(request *sarama.OffsetFetchRequest) {
 					defer wg.Done()
-					handleGroupOffsetRequest(broker, &groupRequests[i], metricOffsetConsumer)
-				}()
+					handleGroupOffsetRequest(broker, request, metricOffsetConsumer)
+				}(&groupRequests[i])
 			}
 			wg.Wait()
 
