@@ -202,23 +202,23 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, broker *sarama.Bro
 				WithField("group.count", len(groupRequests)).
 				Debug("Sending requests")
 
-			wg := &sync.WaitGroup{}
-			wg.Add(2 + len(groupRequests))
+			requestWG := &sync.WaitGroup{}
+			requestWG.Add(2 + len(groupRequests))
 			go func() {
-				defer wg.Done()
+				defer requestWG.Done()
 				handleTopicOffsetRequest(broker, &oldestRequest, "oldest", metricOffsetOldest)
 			}()
 			go func() {
-				defer wg.Done()
+				defer requestWG.Done()
 				handleTopicOffsetRequest(broker, &newestRequest, "newest", metricOffsetNewest)
 			}()
 			for i := range groupRequests {
 				go func(request *sarama.OffsetFetchRequest) {
-					defer wg.Done()
+					defer requestWG.Done()
 					handleGroupOffsetRequest(broker, request, metricOffsetConsumer)
 				}(&groupRequests[i])
 			}
-			wg.Wait()
+			requestWG.Wait()
 
 		case <-shutdown:
 			log.WithField("broker", broker.Addr()).Info("Shutting down handler for broker")
