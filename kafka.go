@@ -79,11 +79,11 @@ func refreshMetadataPeriodically(wg *sync.WaitGroup, shutdown chan struct{}, kaf
 	}
 }
 
-func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, me *sarama.Broker, kafka sarama.Client, cfg scrapeConfig) {
+func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, broker *sarama.Broker, kafka sarama.Client, cfg scrapeConfig) {
 	wg.Add(1)
 	defer wg.Done()
 
-	log.WithField("broker", me.Addr()).
+	log.WithField("broker", broker.Addr()).
 		WithField("interval.min", cfg.FetchMinInterval.String()).
 		WithField("interval.max", cfg.FetchMaxInterval.String()).
 		Info("Starting handler for broker")
@@ -92,11 +92,11 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, me *sarama.Broker,
 	for {
 		select {
 		case <-wait:
-			log.WithField("broker", me.Addr()).Debug("Updating metrics")
+			log.WithField("broker", broker.Addr()).Debug("Updating metrics")
 
 			// ensure broker is connected
-			if err := connect(me); err != nil {
-				log.WithField("broker", me.Addr()).
+			if err := connect(broker); err != nil {
+				log.WithField("broker", broker.Addr()).
 					WithField("error", err).
 					Error("Failed to connect to broker")
 				break
@@ -104,13 +104,13 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, me *sarama.Broker,
 
 			// fetch groups coordinated by this broker
 			var groups []string
-			groupsResponse, err := me.ListGroups(&sarama.ListGroupsRequest{})
+			groupsResponse, err := broker.ListGroups(&sarama.ListGroupsRequest{})
 			if err != nil {
-				log.WithField("broker", me.Addr()).
+				log.WithField("broker", broker.Addr()).
 					WithField("error", err).
 					Error("Failed to retrieve consumer groups")
 			} else if groupsResponse.Err != sarama.ErrNoError {
-				log.WithField("broker", me.Addr()).
+				log.WithField("broker", broker.Addr()).
 					WithField("error", groupsResponse.Err).
 					Error("Failed to retrieve consumer groups")
 			}
@@ -119,22 +119,22 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, me *sarama.Broker,
 					continue
 				}
 
-				broker, err := kafka.Coordinator(group)
+				groupCoordinator, err := kafka.Coordinator(group)
 				if err != nil {
-					log.WithField("broker", me.Addr()).
+					log.WithField("broker", broker.Addr()).
 						WithField("group", group).
 						WithField("error", err).
 						Warn("Failed to identify broker for consumer group")
 					continue
 				}
 
-				if broker == me {
+				if broker == groupCoordinator {
 					groups = append(groups, group)
 				}
 			}
 
 			if len(groups) == 0 {
-				log.WithField("broker", me.Addr()).Debug("No consumer groups to fetch offsets for")
+				log.WithField("broker", broker.Addr()).Debug("No consumer groups to fetch offsets for")
 			}
 
 			// build requests
@@ -149,7 +149,7 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, me *sarama.Broker,
 			// fetch partitions led by this broker, and add all partitions to group requests
 			topics, err := kafka.Topics()
 			if err != nil {
-				log.WithField("broker", me.Addr()).
+				log.WithField("broker", broker.Addr()).
 					WithField("error", err).
 					Error("Failed to get topics")
 				break
@@ -162,7 +162,7 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, me *sarama.Broker,
 
 				partitions, err := kafka.Partitions(topic)
 				if err != nil {
-					log.WithField("broker", me.Addr()).
+					log.WithField("broker", broker.Addr()).
 						WithField("topic", topic).
 						WithField("error", err).
 						Warn("Failed to get partitions for topic")
@@ -175,9 +175,9 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, me *sarama.Broker,
 						groupRequests[i].AddPartition(topic, partition)
 					}
 
-					broker, err := kafka.Leader(topic, partition)
+					partitionLeader, err := kafka.Leader(topic, partition)
 					if err != nil {
-						log.WithField("broker", me.Addr()).
+						log.WithField("broker", broker.Addr()).
 							WithField("topic", topic).
 							WithField("partition", partition).
 							WithField("error", err).
@@ -185,7 +185,7 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, me *sarama.Broker,
 						continue
 					}
 
-					if broker == me {
+					if broker == partitionLeader {
 						oldestRequest.AddBlock(topic, partition, sarama.OffsetOldest, 1)
 						newestRequest.AddBlock(topic, partition, sarama.OffsetNewest, 1)
 						partitionCount++
@@ -194,10 +194,10 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, me *sarama.Broker,
 			}
 
 			if partitionCount == 0 {
-				log.WithField("broker", me.Addr()).Debug("No partitions for broker to fetch")
+				log.WithField("broker", broker.Addr()).Debug("No partitions for broker to fetch")
 			}
 
-			log.WithField("broker", me.Addr()).
+			log.WithField("broker", broker.Addr()).
 				WithField("partition.count", partitionCount).
 				WithField("group.count", len(groupRequests)).
 				Debug("Sending requests")
@@ -206,22 +206,22 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, me *sarama.Broker,
 			wg.Add(2 + len(groupRequests))
 			go func() {
 				defer wg.Done()
-				handleTopicOffsetRequest(me, &oldestRequest, "oldest", metricOffsetOldest)
+				handleTopicOffsetRequest(broker, &oldestRequest, "oldest", metricOffsetOldest)
 			}()
 			go func() {
 				defer wg.Done()
-				handleTopicOffsetRequest(me, &newestRequest, "newest", metricOffsetNewest)
+				handleTopicOffsetRequest(broker, &newestRequest, "newest", metricOffsetNewest)
 			}()
 			for i := range groupRequests {
 				go func() {
 					defer wg.Done()
-					handleGroupOffsetRequest(me, &groupRequests[i], metricOffsetConsumer)
+					handleGroupOffsetRequest(broker, &groupRequests[i], metricOffsetConsumer)
 				}()
 			}
 			wg.Wait()
 
 		case <-shutdown:
-			log.WithField("broker", me.Addr()).Info("Shutting down handler for broker")
+			log.WithField("broker", broker.Addr()).Info("Shutting down handler for broker")
 			return
 		}
 
@@ -230,24 +230,24 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, me *sarama.Broker,
 		duration := time.Duration(rand.Int63n(max-min) + min)
 
 		wait = time.After(duration)
-		log.WithField("broker", me.Addr()).
+		log.WithField("broker", broker.Addr()).
 			WithField("interval.rand", duration.String()).
 			Debug("Updated metrics and waiting for next run")
 	}
 }
 
-func connect(b *sarama.Broker) error {
-	if ok, _ := b.Connected(); ok {
+func connect(broker *sarama.Broker) error {
+	if ok, _ := broker.Connected(); ok {
 		return nil
 	}
 
 	cfg := sarama.NewConfig()
 	cfg.Version = sarama.V0_10_0_0
-	if err := b.Open(cfg); err != nil {
+	if err := broker.Open(cfg); err != nil {
 		return err
 	}
 
-	if connected, err := b.Connected(); err != nil {
+	if connected, err := broker.Connected(); err != nil {
 		return err
 	} else if !connected {
 		return errors.New("Unknown failure")
@@ -256,10 +256,10 @@ func connect(b *sarama.Broker) error {
 	return nil
 }
 
-func handleGroupOffsetRequest(b *sarama.Broker, request *sarama.OffsetFetchRequest, metric *prometheus.GaugeVec) {
-	response, err := b.FetchOffset(request)
+func handleGroupOffsetRequest(broker *sarama.Broker, request *sarama.OffsetFetchRequest, metric *prometheus.GaugeVec) {
+	response, err := broker.FetchOffset(request)
 	if err != nil {
-		log.WithField("broker", b.Addr()).
+		log.WithField("broker", broker.Addr()).
 			WithField("group", request.ConsumerGroup).
 			WithField("error", err).
 			Error("Failed to request group offsets")
@@ -269,14 +269,14 @@ func handleGroupOffsetRequest(b *sarama.Broker, request *sarama.OffsetFetchReque
 	for topic, partitions := range response.Blocks {
 		for partition, block := range partitions {
 			if block == nil {
-				log.WithField("broker", b.Addr()).
+				log.WithField("broker", broker.Addr()).
 					WithField("group", request.ConsumerGroup).
 					WithField("topic", topic).
 					WithField("partition", partition).
 					Warn("Failed to get data for group")
 				continue
 			} else if block.Err != sarama.ErrNoError {
-				log.WithField("broker", b.Addr()).
+				log.WithField("broker", broker.Addr()).
 					WithField("group", request.ConsumerGroup).
 					WithField("topic", topic).
 					WithField("partition", partition).
@@ -296,10 +296,10 @@ func handleGroupOffsetRequest(b *sarama.Broker, request *sarama.OffsetFetchReque
 	}
 }
 
-func handleTopicOffsetRequest(b *sarama.Broker, request *sarama.OffsetRequest, offsetType string, metric *prometheus.GaugeVec) {
-	response, err := b.GetAvailableOffsets(request)
+func handleTopicOffsetRequest(broker *sarama.Broker, request *sarama.OffsetRequest, offsetType string, metric *prometheus.GaugeVec) {
+	response, err := broker.GetAvailableOffsets(request)
 	if err != nil {
-		log.WithField("broker", b.Addr()).
+		log.WithField("broker", broker.Addr()).
 			WithField("offset.type", offsetType).
 			WithField("error", err).
 			Error("Failed to request topic offsets")
@@ -309,20 +309,20 @@ func handleTopicOffsetRequest(b *sarama.Broker, request *sarama.OffsetRequest, o
 	for topic, partitions := range response.Blocks {
 		for partition, block := range partitions {
 			if block == nil {
-				log.WithField("broker", b.Addr()).
+				log.WithField("broker", broker.Addr()).
 					WithField("topic", topic).
 					WithField("partition", partition).
 					Warn("Failed to get data for partition")
 				continue
 			} else if block.Err != sarama.ErrNoError {
-				log.WithField("broker", b.Addr()).
+				log.WithField("broker", broker.Addr()).
 					WithField("topic", topic).
 					WithField("partition", partition).
 					WithField("error", block.Err).
 					Warn("Failed getting offsets for partition")
 				continue
 			} else if len(block.Offsets) != 1 {
-				log.WithField("broker", b.Addr()).
+				log.WithField("broker", broker.Addr()).
 					WithField("topic", topic).
 					WithField("partition", partition).
 					Warn("Got unexpected offset data for partition")
@@ -332,7 +332,7 @@ func handleTopicOffsetRequest(b *sarama.Broker, request *sarama.OffsetRequest, o
 			metric.With(prometheus.Labels{
 				"topic":     topic,
 				"partition": strconv.Itoa(int(partition)),
-				"leader":    b.Addr(),
+				"leader":    broker.Addr(),
 			}).Set(float64(block.Offsets[0]))
 		}
 	}
