@@ -22,7 +22,6 @@ var (
 		[]string{
 			"topic",
 			"partition",
-			"leader",
 		},
 	)
 	metricOffsetNewest = prometheus.NewGaugeVec(
@@ -33,7 +32,6 @@ var (
 		[]string{
 			"topic",
 			"partition",
-			"leader",
 		},
 	)
 	metricOffsetConsumer = prometheus.NewGaugeVec(

@@ -332,7 +332,6 @@ func handleTopicOffsetRequest(broker *sarama.Broker, request *sarama.OffsetReque
 			metric.With(prometheus.Labels{
 				"topic":     topic,
 				"partition": strconv.Itoa(int(partition)),
-				"leader":    broker.Addr(),
 			}).Set(float64(block.Offsets[0]))
 		}
 	}
