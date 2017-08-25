@@ -35,3 +35,30 @@ Usage of ./kafka-offset-exporter:
   -topics string
         Only fetch offsets for topics matching this regex (default all)
 ```
+
+## Dockerfile
+
+First build the binary to include in the Docker container. Default this generates a 10M binary. With (optional) `-ldflags="-s -w"` it becomes 6.5M.
+```
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" .
+```
+
+Optional optimization: final result 1.7M binary.
+```
+upx --ultra-brute kafka-offset-exporter
+```
+
+Now build the docker image:
+```
+docker build -t kafka-offset-exporter .
+```
+
+Run the image:
+```
+docker run -d -p 9000:9000 kafka-offset-exporter
+```
+
+Additionally add arguments, e.g.:
+```
+docker run -d -p 9000:9000 kafka-offset-exporter -brokers 127.0.0.1:9092
+```
