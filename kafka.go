@@ -113,26 +113,27 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, broker *sarama.Bro
 				log.WithField("broker", broker.Addr()).
 					WithField("error", groupsResponse.Err).
 					Error("Failed to retrieve consumer groups")
+			} else {
+				for group := range groupsResponse.Groups {
+					if !cfg.GroupsFilter.MatchString(group) {
+						log.WithField("group", group).Info("not found group")
+						continue
+					}
+
+					groupCoordinator, err := kafka.Coordinator(group)
+					if err != nil {
+						log.WithField("broker", broker.Addr()).
+							WithField("group", group).
+							WithField("error", err).
+							Warn("Failed to identify broker for consumer group")
+						continue
+					}
+
+					if broker == groupCoordinator {
+						groups = append(groups, group)
+					}
+				}
 			}
-			for group := range groupsResponse.Groups {
-				if !cfg.GroupsFilter.MatchString(group) {
-					continue
-				}
-
-				groupCoordinator, err := kafka.Coordinator(group)
-				if err != nil {
-					log.WithField("broker", broker.Addr()).
-						WithField("group", group).
-						WithField("error", err).
-						Warn("Failed to identify broker for consumer group")
-					continue
-				}
-
-				if broker == groupCoordinator {
-					groups = append(groups, group)
-				}
-			}
-
 			if len(groups) == 0 {
 				log.WithField("broker", broker.Addr()).Debug("No consumer groups to fetch offsets for")
 			}
