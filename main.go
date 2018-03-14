@@ -66,7 +66,7 @@ func mustNewKafka(brokerString string) sarama.Client {
 	log.WithField("brokers.bootstrap", brokers).Info("connecting to cluster with bootstrap hosts")
 
 	cfg := sarama.NewConfig()
-	cfg.Version = sarama.V0_10_0_0
+	cfg.Version = sarama.V1_0_0_0
 	client, err := sarama.NewClient(brokers, cfg)
 	if err != nil {
 		log.Fatal(err)
