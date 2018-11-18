@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Shopify/sarama"
-	log "github.com/Sirupsen/logrus"
+	"github.com/shopify/sarama"
+	log "github.com/sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
