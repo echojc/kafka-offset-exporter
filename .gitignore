@@ -1,3 +1,4 @@
 vendor/*/
-kafka-offset-exporter
+kafka-exporter
 debug
+.idea/
