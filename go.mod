@@ -1,4 +1,4 @@
-module github.com/echojc/kafka-exporter
+module github.com/drrzmr/cafica-exporter
 
 require (
 	github.com/Shopify/toxiproxy v2.1.3+incompatible // indirect
