@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"os"
 	"os/signal"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/namsral/flag"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,7 +22,7 @@ func main() {
 	refresh := flag.Duration("refresh", 1*time.Minute, "Time between refreshing cluster metadata")
 	fetchMin := flag.Duration("fetchMin", 15*time.Second, "Min time before requesting updates from broker")
 	fetchMax := flag.Duration("fetchMax", 40*time.Second, "Max time before requesting updates from broker")
-	level := flag.String("level", "info", "Logger level")
+	level := flag.String("level", log.WarnLevel.String(), "the log level to display (debug,info,error,warning)")
 	flag.Parse()
 
 	mustSetupLogger(*level)
