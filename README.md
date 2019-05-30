@@ -1,23 +1,47 @@
 # kafka-offset-exporter
 
 ----
+## Migration to Go Mod
 
-## no longer maintained
+As the origial version of this project is not maintained anymore, I decided to fork it and move it to `go mod`.
+For a user point of view, there's nothing to do to use this project as usual.
 
-My employer used to rely heavily on Kafka and so I could dogfood and iterate on
-this project regularly. Unfortunately, this is no longer the case and I don't
-have the resources to maintain and/or develop this anymore.
+## Build
 
-I don't feel comfortable recommending people to use outdated and unmaintained
-software, so please consider using an established fork, forking this yourself,
-or creating a new-and-improved exporter as an alternative.
+Simply clone the repo and `go build`, or use `go get` :
 
-Thanks all!
-
-----
+```bash
+go get github.com/prune998/kafka-offset-exporter
+```
 
 This is a Prometheus exporter for topic and consumer group offsets in Kafka.
 Your Kafka cluster must be on version 0.10.0.0 or above for this to work.
+
+### Docker
+
+There is a basic `Dockerfile` that will build and package the application. The final image is based on Alpine.
+
+To build it yourself, just clone the repository and build it :
+
+```bash
+git clone https://github.com/prune998/kafka-offset-exporter
+cd kafka-offset-exporter
+docker build -t kafka-offset-exporter:latest .
+docker run -ti --rm prune/kafka-offset-exporter:v1.0.0
+```
+
+There is a maintained image at `prune/kafka-offset-exporter:v1.0.0` :
+
+```bash
+docker pull prune/kafka-offset-exporter:v1.0.0
+docker run -ti --rm prune/kafka-offset-exporter:v1.0.0
+```
+
+In both case, add your arguments on the commandline (see *Usage*):
+
+```bash
+docker run -ti --rm prune/kafka-offset-exporter:v1.0.0 -brokers localhost:9092
+```
 
 ## Usage
 
@@ -51,3 +75,19 @@ Usage of ./kafka-offset-exporter:
   -topics string
         Only fetch offsets for topics matching this regex (default all)
 ```
+
+## Original version no longer maintained
+
+The original version of this project is located at [<https://github.com/prune998/kafka-offset-exporter.git]>
+
+My employer used to rely heavily on Kafka and so I could dogfood and iterate on
+this project regularly. Unfortunately, this is no longer the case and I don't
+have the resources to maintain and/or develop this anymore.
+
+I don't feel comfortable recommending people to use outdated and unmaintained
+software, so please consider using an established fork, forking this yourself,
+or creating a new-and-improved exporter as an alternative.
+
+Thanks all!
+
+----
