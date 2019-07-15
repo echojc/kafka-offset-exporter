@@ -6,11 +6,11 @@ GOBUILD_OPTS := -v -mod=vendor -ldflags "-X main.version=$(version)-$(buildtime)
 all: kafka-offset-exporter
 
 kafka-offset-exporter: 
-	cd cmd/kafka2eventhub && CGO_ENABLED=0 go build $(GOBUILD_OPTS)
+	CGO_ENABLED=0 go build $(GOBUILD_OPTS)
 
 # Common
 docker: 
-	docker build -t kafka-offset-exporter:$(version) --build-arg REGISTRY_BASE_IMAGES=$(REGISTRY_BASE_IMAGES) .
+	docker build -t kafka-offset-exporter:$(version) .
 
 test:
 	go test ./...
