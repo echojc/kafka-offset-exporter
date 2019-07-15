@@ -13,6 +13,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	version = "no version set"
+)
+
+type serverConfig struct {
+	port int
+	path string
+}
+
 func main() {
 	brokerString := flag.String("brokers", "", "Kafka brokers to connect to, comma-separated")
 	topics := flag.String("topics", "", "Only fetch offsets for topics matching this regex (default all)")
@@ -36,6 +45,14 @@ func main() {
 		startKafkaScraper(wg, shutdown, kafka, scrapeConfig)
 		startMetricsServer(wg, shutdown, serverConfig)
 	})
+}
+
+func mustNewServerConfig(port int, path string) serverConfig {
+
+	return serverConfig{
+		port: port,
+		path: path,
+	}
 }
 
 func enforceGracefulShutdown(f func(wg *sync.WaitGroup, shutdown chan struct{})) {
@@ -67,6 +84,8 @@ func mustNewKafka(brokerString string) sarama.Client {
 
 	cfg := sarama.NewConfig()
 	cfg.Version = sarama.V1_0_0_0
+	cfg.ClientID = "kafka-offset-exporter"
+
 	client, err := sarama.NewClient(brokers, cfg)
 	if err != nil {
 		log.Fatal(err)
@@ -84,7 +103,7 @@ func mustNewKafka(brokerString string) sarama.Client {
 func mustSetupLogger(level string) {
 	logLevel, err := log.ParseLevel(level)
 	if err != nil {
-		log.Fatal(err)
+		logLevel = log.WarnLevel
 	}
 
 	log.SetLevel(logLevel)

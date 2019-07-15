@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	log "github.com/sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -50,14 +50,15 @@ func mustNewScrapeConfig(refresh time.Duration, fetchMin time.Duration, fetchMax
 }
 
 func startKafkaScraper(wg *sync.WaitGroup, shutdown chan struct{}, kafka sarama.Client, cfg scrapeConfig) {
+	wg.Add(1)
 	go refreshMetadataPeriodically(wg, shutdown, kafka, cfg)
 	for _, broker := range kafka.Brokers() {
+		wg.Add(1)
 		go manageBroker(wg, shutdown, broker, kafka, cfg)
 	}
 }
 
 func refreshMetadataPeriodically(wg *sync.WaitGroup, shutdown chan struct{}, kafka sarama.Client, cfg scrapeConfig) {
-	wg.Add(1)
 	defer wg.Done()
 
 	log.WithField("interval", cfg.MetadataRefreshInterval.String()).
@@ -80,7 +81,6 @@ func refreshMetadataPeriodically(wg *sync.WaitGroup, shutdown chan struct{}, kaf
 }
 
 func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, broker *sarama.Broker, kafka sarama.Client, cfg scrapeConfig) {
-	wg.Add(1)
 	defer wg.Done()
 
 	log.WithField("broker", broker.Addr()).
@@ -243,7 +243,7 @@ func connect(broker *sarama.Broker) error {
 	}
 
 	cfg := sarama.NewConfig()
-	cfg.Version = sarama.V0_10_0_0
+	cfg.Version = sarama.V1_0_0_0
 	if err := broker.Open(cfg); err != nil {
 		return err
 	}
