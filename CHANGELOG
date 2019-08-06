@@ -1,0 +1,4 @@
+# 20190806 - V1.0.2 - prune 
+Ensure the exporter close the connexion to the broker when we can't retreive data. The test using the broker.Connected() just check if an Address exist for this broker, not it the wire is still working.
+There are places of improvements for it to work cleaner... but who's got time ? 
+I also noted that the global workflow is biased : when the exporter starts, it fetches the list of Brokers, then start scraping each of them. This scenario does not take care of addition or removal of other Brokers...

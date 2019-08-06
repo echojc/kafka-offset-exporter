@@ -116,7 +116,7 @@ Usage of ./kafka-offset-exporter:
 
 ## The Original of kafka-offset-exporter version no longer maintained
 
-The original version of this project is located at [<https://github.com/echojc/kafka-offset-exporter]>
+The original version of this project is located at [<https://github.com/echojc/kafka-offset-exporter]
 It is not maintained anymore, while this fork is. Please submit PRs here.
 
 From the orignial author Jonathan Chow [https://github.com/echojc] :
