@@ -114,10 +114,14 @@ Usage of ./kafka-offset-exporter:
         Only fetch offsets for topics matching this regex (default all)
 ```
 
-## Original version no longer maintained
+## The Original of kafka-offset-exporter version no longer maintained
 
-The original version of this project is located at [<https://github.com/prune998/kafka-offset-exporter.git]>
+The original version of this project is located at [<https://github.com/echojc/kafka-offset-exporter]
+It is not maintained anymore, while this fork is. Please submit PRs here.
 
+From the orignial author Jonathan Chow [https://github.com/echojc] :
+
+```text
 My employer used to rely heavily on Kafka and so I could dogfood and iterate on
 this project regularly. Unfortunately, this is no longer the case and I don't
 have the resources to maintain and/or develop this anymore.
@@ -127,5 +131,6 @@ software, so please consider using an established fork, forking this yourself,
 or creating a new-and-improved exporter as an alternative.
 
 Thanks all!
+```
 
 ----
