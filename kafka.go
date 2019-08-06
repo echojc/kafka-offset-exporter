@@ -109,10 +109,14 @@ func manageBroker(wg *sync.WaitGroup, shutdown chan struct{}, broker *sarama.Bro
 				log.WithField("broker", broker.Addr()).
 					WithField("error", err).
 					Error("Failed to retrieve consumer groups")
+				broker.Close()
+				break
 			} else if groupsResponse.Err != sarama.ErrNoError {
 				log.WithField("broker", broker.Addr()).
 					WithField("error", groupsResponse.Err).
 					Error("Failed to retrieve consumer groups")
+				broker.Close()
+				break
 			} else {
 				for group := range groupsResponse.Groups {
 					if !cfg.GroupsFilter.MatchString(group) {
