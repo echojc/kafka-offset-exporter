@@ -27,7 +27,7 @@ func main() {
 	topics := flag.String("topics", "", "Only fetch offsets for topics matching this regex (default all)")
 	groups := flag.String("groups", "", "Also fetch offsets for consumer groups matching this regex (default none)")
 	port := flag.Int("port", 9000, "Port to export metrics on")
-	path := flag.String("path", "/", "Path to export metrics on")
+	path := flag.String("path", "/metrics", "Path to export metrics on")
 	refresh := flag.Duration("refresh", 1*time.Minute, "Time between refreshing cluster metadata")
 	fetchMin := flag.Duration("fetchMin", 15*time.Second, "Min time before requesting updates from broker")
 	fetchMax := flag.Duration("fetchMax", 40*time.Second, "Max time before requesting updates from broker")
