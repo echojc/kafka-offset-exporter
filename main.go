@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/namsral/flag"
 	log "github.com/sirupsen/logrus"
 )
