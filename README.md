@@ -36,20 +36,20 @@ To build it yourself, just clone the repository and build it :
 git clone https://github.com/prune998/kafka-offset-exporter
 cd kafka-offset-exporter
 docker build -t kafka-offset-exporter:latest .
-docker run -ti --rm prune/kafka-offset-exporter:v1.0.4
+docker run -ti --rm prune/kafka-offset-exporter:v1.0.5
 ```
 
-There is a maintained image at `prune/kafka-offset-exporter:v1.0.4` :
+There is a maintained image at `prune/kafka-offset-exporter:v1.0.5` :
 
 ```bash
-docker pull prune/kafka-offset-exporter:v1.0.4
-docker run -ti --rm prune/kafka-offset-exporter:v1.0.4
+docker pull prune/kafka-offset-exporter:v1.0.5
+docker run -ti --rm prune/kafka-offset-exporter:v1.0.5
 ```
 
 In both case, add your arguments on the commandline (see *Usage*):
 
 ```bash
-docker run -ti --rm prune/kafka-offset-exporter:v1.0.4 -brokers localhost:9092
+docker run -ti --rm prune/kafka-offset-exporter:v1.0.5 -brokers localhost:9092
 ```
 
 ## Usage
@@ -71,18 +71,18 @@ metadata:
   name: kafka-offset-exporter
   labels:
     app: "kafka-offset-exporter"
-    release: "v1.0.4"
+    release: "v1.0.5"
 spec:
   replicas: 1
   template:
     metadata:
       labels:
         app: "kafka-offset-exporter"
-        release: "v1.0.4"
+        release: "v1.0.5"
     spec:
       containers:
       - name: kafka-offset-exporter
-        image: "prune/kafka-offset-exporter:v1.0.4"
+        image: "prune/kafka-offset-exporter:v1.0.5"
         imagePullPolicy: "Always"
         args:
         - "-brokers"
