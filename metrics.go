@@ -2,15 +2,15 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
 	"sync"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -53,27 +53,26 @@ func init() {
 	prometheus.MustRegister(metricOffsetConsumer)
 }
 
-type serverConfig struct {
-	port int
-	path string
-}
-
-func mustNewServerConfig(port int, path string) serverConfig {
-	if port < 0 || port > math.MaxUint16 {
-		log.Fatal("Invalid port number")
-	}
-	return serverConfig{
-		port: port,
-		path: path,
-	}
-}
-
 func startMetricsServer(wg *sync.WaitGroup, shutdown chan struct{}, cfg serverConfig) {
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 
 		mux := http.NewServeMux()
+
+		// healthz basic
+		mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+			m := map[string]interface{}{"version": version, "status": "OK"}
+
+			b, err := json.Marshal(m)
+			if err != nil {
+				http.Error(w, "cant marshal healthz json", http.StatusInternalServerError)
+				return
+			}
+
+			w.Write(b)
+		})
+
 		mux.Handle(cfg.path, promhttp.Handler())
 		srv := &http.Server{
 			Addr:    fmt.Sprintf(":%d", cfg.port),
